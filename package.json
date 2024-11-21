@@ -1,0 +1,67 @@
+{
+	"name": "polar-migrate",
+	"version": "0.1.0",
+	"license": "Apache-2.0",
+	"bin": "bin/cli.js",
+	"type": "module",
+	"engines": {
+		"node": ">=16"
+	},
+	"scripts": {
+		"build": "tsup ./src/cli.tsx --format esm",
+		"dev": " tsc --watch",
+		"test": "prettier --check . && xo && ava",
+		"check": "biome check --write ./src"
+	},
+	"files": ["dist", "bin"],
+	"dependencies": {
+		"@inkjs/ui": "^2.0.0",
+		"@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
+		"@polar-sh/sdk": "^0.16.0",
+		"@types/cross-spawn": "^6.0.6",
+		"cross-spawn": "^7.0.3",
+		"ink": "^4.4.1",
+		"ink-link": "^4.1.0",
+		"listr": "^0.14.3",
+		"meow": "^11.0.0",
+		"open": "^10.1.0",
+		"prompts": "^2.4.2",
+		"react": "^18.2.0",
+		"standardwebhooks": "1.0.0",
+		"tsup": "^8.3.0",
+		"zod": "^3.23.8"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@sindresorhus/tsconfig": "^3.0.1",
+		"@types/listr": "^0.14.9",
+		"@types/prompts": "^2.4.9",
+		"@types/react": "^18.3.11",
+		"@vdemedes/prettier-config": "^2.0.1",
+		"ava": "^5.2.0",
+		"chalk": "^5.2.0",
+		"eslint-config-xo-react": "^0.27.0",
+		"eslint-plugin-react": "^7.32.2",
+		"eslint-plugin-react-hooks": "^4.6.0",
+		"ink-testing-library": "^3.0.0",
+		"prettier": "^2.8.7",
+		"ts-node": "^10.9.1",
+		"typescript": "^5.0.3",
+		"xo": "^0.53.1"
+	},
+	"ava": {
+		"extensions": {
+			"ts": "module",
+			"tsx": "module"
+		},
+		"nodeArguments": ["--loader=ts-node/esm"]
+	},
+	"xo": {
+		"extends": "xo-react",
+		"prettier": true,
+		"rules": {
+			"react/prop-types": "off"
+		}
+	},
+	"prettier": "@vdemedes/prettier-config"
+}
