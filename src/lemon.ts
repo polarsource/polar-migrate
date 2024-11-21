@@ -1,10 +1,10 @@
 import {
-	lemonSqueezySetup,
 	getAuthenticatedUser,
-	listProducts,
-	listStores,
+	lemonSqueezySetup,
 	listDiscounts,
 	listFiles,
+	listProducts,
+	listStores,
 	listVariants,
 } from "@lemonsqueezy/lemonsqueezy.js";
 

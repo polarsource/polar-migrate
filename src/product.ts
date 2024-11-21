@@ -1,3 +1,4 @@
+import type { ListProducts, ListVariants } from "@lemonsqueezy/lemonsqueezy.js";
 import type { Polar } from "@polar-sh/sdk";
 import type {
 	BenefitLicenseKeyExpirationProperties,
@@ -12,7 +13,6 @@ import type {
 	ProductRecurringCreate,
 	Timeframe,
 } from "@polar-sh/sdk/models/components";
-import type { ListProducts, ListVariants } from "@lemonsqueezy/lemonsqueezy.js";
 
 const resolveInterval = (
 	interval: ListVariants["data"][number]["attributes"]["interval"],

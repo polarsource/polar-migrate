@@ -1,16 +1,16 @@
 import { Polar } from "@polar-sh/sdk";
 import meow from "meow";
+import open from "open";
+import { createLemonClient } from "./lemon.js";
 import { login } from "./oauth.js";
 import { resolveOrganization } from "./organization.js";
 import { createProduct } from "./product.js";
-import { authenticationMessage } from "./ui/authentication.js";
-import { successMessage } from "./ui/success.js";
-import { createLemonClient } from "./lemon.js";
 import { lemonAccessKeyPrompt } from "./prompts/lemonAccessKey.js";
+import { serverPrompt } from "./prompts/server.js";
 import { storePrompt } from "./prompts/store.js";
 import { variantsPrompt } from "./prompts/variants.js";
-import { serverPrompt } from "./prompts/server.js";
-import open from "open";
+import { authenticationMessage } from "./ui/authentication.js";
+import { successMessage } from "./ui/success.js";
 
 process.on("uncaughtException", (error) => {
 	console.error(error);
