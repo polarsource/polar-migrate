@@ -21,7 +21,7 @@ export const storePrompt = async (stores: ListStores["data"]) => {
 	}
 
 	if (selectedStore.attributes.currency !== "USD") {
-		throw new Error("Store currency is not USD");
+		throw new Error("Store Currency must be USD");
 	}
 
 	return selectedStore;

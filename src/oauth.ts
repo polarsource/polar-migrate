@@ -28,6 +28,10 @@ const config = {
 		"products:write",
 		"benefits:read",
 		"benefits:write",
+		"files:read",
+		"files:write",
+		"discounts:read",
+		"discounts:write",
 	],
 	redirectUrl: "http://127.0.0.1:3333/oauth/callback",
 };

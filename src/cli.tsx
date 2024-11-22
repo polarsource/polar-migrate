@@ -103,4 +103,6 @@ meow(
 			organization.slug
 		}/products`,
 	);
+
+	process.exit(0);
 })();

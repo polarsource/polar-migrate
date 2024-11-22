@@ -9,7 +9,7 @@ export const successMessage = async (
 	products: Product[],
 	server: "sandbox" | "production",
 ) => {
-	const { unmount, clear, waitUntilExit } = render(
+	const { unmount, waitUntilExit } = render(
 		<Box flexDirection="column" columnGap={2}>
 			<StatusMessage variant="success">
 				<Text>Polar was successfully initialized!</Text>
@@ -31,7 +31,6 @@ export const successMessage = async (
 	);
 
 	setTimeout(() => {
-		clear();
 		unmount();
 	}, 1500);
 

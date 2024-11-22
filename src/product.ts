@@ -1,9 +1,15 @@
-import type { ListProducts, ListVariants } from "@lemonsqueezy/lemonsqueezy.js";
+import {
+	listFiles,
+	type ListProducts,
+	type ListVariants,
+} from "@lemonsqueezy/lemonsqueezy.js";
 import type { Polar } from "@polar-sh/sdk";
 import type {
 	BenefitLicenseKeyExpirationProperties,
+	FileRead,
 	Interval,
 	Organization,
+	Product,
 	ProductOneTimeCreate,
 	ProductPriceOneTimeCustomCreate,
 	ProductPriceOneTimeFixedCreate,
@@ -13,6 +19,13 @@ import type {
 	ProductRecurringCreate,
 	Timeframe,
 } from "@polar-sh/sdk/models/components";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
+import mime from "mime-types";
+import https from "node:https";
+import { Upload } from "./upload.js";
+import { uploadFailedMessage, uploadMessage } from "./ui/upload.js";
 
 const resolveInterval = (
 	interval: ListVariants["data"][number]["attributes"]["interval"],
@@ -168,5 +181,171 @@ export const createProduct = async (
 		});
 	}
 
+	try {
+		await handleFiles(api, organization, variant, product);
+	} catch (e) {
+		await uploadFailedMessage();
+	}
+
 	return product;
+};
+
+const handleFiles = async (
+	api: Polar,
+	organization: Organization,
+	variant: ListVariants["data"][number],
+	product: Product,
+) => {
+	const files = await listFiles({
+		filter: {
+			variantId: variant.id,
+		},
+	});
+
+	// Group files with same variant id and download them
+	const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "polar-"));
+
+	const groupedFiles =
+		files.data?.data?.reduce<
+			Record<string, { downloadUrl: string; filePath: string }[]>
+		>((acc, file) => {
+			if ("attributes" in file && "variant_id" in file.attributes) {
+				const filePath = path.join(tempDir, file.attributes.name);
+				const url = new URL(file.attributes.download_url);
+
+				acc[file.attributes.variant_id] = [
+					...(acc[file.attributes.variant_id] ?? []),
+					{
+						downloadUrl: url.toString(),
+						filePath,
+					},
+				];
+			}
+
+			return acc;
+		}, {}) ?? {};
+
+	await Promise.all(
+		Object.values(groupedFiles)
+			.flat()
+			.map((file) => downloadFile(file.downloadUrl, file.filePath)),
+	);
+
+	// Create one benefit per variant, upload the files to the benefit, and add the benefit to the product
+
+	for (const [_, files] of Object.entries(groupedFiles)) {
+		const fileUploads = await Promise.all(
+			files.map((file) => uploadFile(api, organization, file.filePath)),
+		);
+
+		const benefit = await api.benefits.create({
+			type: "downloadables",
+			description: product.name,
+			properties: {
+				files: fileUploads.map((file) => file.id),
+			},
+			organizationId: organization.id,
+		});
+
+		await api.products.updateBenefits({
+			id: product.id,
+			productBenefitsUpdate: {
+				benefits: [benefit.id],
+			},
+		});
+	}
+
+	// Clean up temporary files
+	await Promise.all(
+		Object.values(groupedFiles)
+			.flat()
+			.map((file) => fs.promises.unlink(file.filePath)),
+	);
+
+	await fs.promises.rmdir(tempDir);
+};
+
+const downloadFile = (url: string, filePath: string) => {
+	return new Promise<void>((resolve, reject) => {
+		const options = {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/octet-stream",
+			},
+		};
+
+		const writer = fs.createWriteStream(filePath);
+
+		const request = https.get(url, options, (response) => {
+			if (response.statusCode !== 200) {
+				fs.unlink(filePath, (e) => {
+					if (e) {
+						console.error(e);
+					}
+				});
+				reject(response);
+				return;
+			}
+
+			response.pipe(writer);
+
+			writer.on("finish", () => {
+				writer.close();
+				resolve();
+			});
+		});
+
+		request.on("error", (err) => {
+			console.error(err);
+
+			fs.unlink(filePath, (e) => {
+				if (e) {
+					console.error(e);
+				}
+			});
+		});
+
+		writer.on("error", (err) => {
+			console.error(err);
+
+			fs.unlink(filePath, (e) => {
+				if (e) {
+					console.error(e);
+				}
+			});
+		});
+
+		request.end();
+	});
+};
+
+const uploadFile = async (
+	api: Polar,
+	organization: Organization,
+	filePath: string,
+) => {
+	const readStream = fs.createReadStream(filePath);
+	const mimeType = mime.lookup(filePath) || "application/octet-stream";
+
+	const fileUploadPromise = new Promise<FileRead>((resolve) => {
+		const upload = new Upload(api, {
+			organization,
+			file: {
+				name: path.basename(filePath),
+				type: mimeType,
+				size: fs.statSync(filePath).size,
+				readStream,
+			},
+			onFileUploadProgress: () => {},
+			onFileUploaded: resolve,
+		});
+
+		upload.run();
+	});
+
+	await uploadMessage(fileUploadPromise);
+
+	const fileUpload = await fileUploadPromise;
+
+	return fileUpload;
 };

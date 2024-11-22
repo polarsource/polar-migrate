@@ -10,7 +10,11 @@ export const resolveOrganization = async (
 	storeSlug: string,
 ): Promise<Organization> => {
 	// Get list of organizations user is member of
-	const userOrganizations = (await api.organizations.list({})).result.items;
+	const userOrganizations = (
+		await api.organizations.list({
+			limit: 100,
+		})
+	).result.items;
 
 	// If user has organizations, prompt them to select one
 	const organization = await selectOrganizationPrompt(userOrganizations);
