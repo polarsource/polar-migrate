@@ -1,6 +1,7 @@
 import type { ReadStream } from "node:fs";
 import type { Polar } from "@polar-sh/sdk";
 import type {
+	FileCreate,
 	FileRead,
 	FileUpload,
 	Organization,
@@ -8,7 +9,6 @@ import type {
 	S3FileUploadCompletedPart,
 	S3FileUploadPart,
 } from "@polar-sh/sdk/models/components";
-import type { FilesCreateFileCreate } from "@polar-sh/sdk/models/operations";
 
 const CHUNK_SIZE = 10000000; // 10MB
 
@@ -74,7 +74,7 @@ export class Upload {
 		const parts = await this.getMultiparts();
 		const mimeType = this.file.type ?? "application/octet-stream";
 
-		const params: FilesCreateFileCreate = {
+		const params: FileCreate = {
 			organizationId: this.organization.id,
 			service: "downloadable",
 			name: this.file.name,

@@ -1,4 +1,7 @@
+import { listDiscounts } from "@lemonsqueezy/lemonsqueezy.js";
 import { Polar } from "@polar-sh/sdk";
+import type { Discount } from "@polar-sh/sdk/models/components/index.js";
+import type { Product } from "@polar-sh/sdk/models/components/product.js";
 import meow from "meow";
 import open from "open";
 import { createLemonClient } from "./lemon.js";
@@ -83,20 +86,97 @@ meow(
 
 	const createdProducts = await Promise.all(
 		variants.map((variant) => {
-			const product = products.data?.data?.find(
+			const lemonProduct = products.data?.data?.find(
 				(product) => product.id === variant.attributes.product_id.toString(),
 			);
 
-			if (!product) {
+			if (!lemonProduct) {
 				console.error(`Product not found for variant ${variant.id}`);
 				process.exit(1);
 			}
 
-			return createProduct(polar, organization, variant, product);
+			return createProduct(polar, organization, variant, lemonProduct);
 		}),
 	);
 
-	await successMessage(organization, createdProducts, server);
+	const variantWithProductMap = new Map<string, Product>();
+
+	for (const product of createdProducts) {
+		variantWithProductMap.set(product.variantId, product.product);
+	}
+
+	const discounts = await listDiscounts({
+		filter: {
+			storeId: store.id,
+		},
+		include: ["variants"],
+	});
+
+	const publishedDiscounts =
+		discounts.data?.data?.filter(
+			(discount) => discount.attributes.status === "published",
+		) ?? [];
+
+	let createdDiscounts: Discount[] = [];
+
+	try {
+		createdDiscounts = await Promise.all(
+			publishedDiscounts.map((discount) => {
+				const commonProps = {
+					code: discount.attributes.code,
+					duration: discount.attributes.duration,
+					durationInMonths: discount.attributes.duration_in_months,
+					name: discount.attributes.name,
+					maxRedemptions: discount.attributes.is_limited_redemptions
+						? Math.max(discount.attributes.max_redemptions, 1)
+						: undefined,
+					startsAt: discount.attributes.starts_at
+						? new Date(discount.attributes.starts_at)
+						: undefined,
+					endsAt: discount.attributes.expires_at
+						? new Date(discount.attributes.expires_at)
+						: undefined,
+					organizationId: organization.id,
+				};
+
+				const productsToAssociateWithDiscount =
+					discount.relationships.variants.data
+						?.map((variant) => variantWithProductMap.get(variant.id)?.id)
+						.filter((id): id is string => id !== undefined) ?? [];
+
+				if (discount.attributes.amount_type === "fixed") {
+					return polar.discounts.create({
+						...commonProps,
+						amount: discount.attributes.amount,
+						type: "fixed",
+						products:
+							productsToAssociateWithDiscount?.length > 0
+								? productsToAssociateWithDiscount
+								: undefined,
+					});
+				}
+
+				return polar.discounts.create({
+					...commonProps,
+					basisPoints: discount.attributes.amount * 100,
+					type: "percentage",
+					products:
+						productsToAssociateWithDiscount?.length > 0
+							? productsToAssociateWithDiscount
+							: undefined,
+				});
+			}),
+		);
+	} catch (e) {
+		console.error(e);
+	}
+
+	await successMessage(
+		organization,
+		createdProducts.map((p) => p.product),
+		createdDiscounts,
+		server,
+	);
 
 	open(
 		`https://${server === "sandbox" ? "sandbox." : ""}polar.sh/dashboard/${

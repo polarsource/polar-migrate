@@ -1,4 +1,5 @@
 import { StatusMessage } from "@inkjs/ui";
+import type { Discount } from "@polar-sh/sdk/models/components/index.js";
 import type { Organization } from "@polar-sh/sdk/models/components/organization.js";
 import type { Product } from "@polar-sh/sdk/models/components/product.js";
 import { Box, Text, render } from "ink";
@@ -7,6 +8,7 @@ import React from "react";
 export const successMessage = async (
 	organization: Organization,
 	products: Product[],
+	createdDiscounts: Discount[],
 	server: "sandbox" | "production",
 ) => {
 	const { unmount, waitUntilExit } = render(
@@ -21,11 +23,26 @@ export const successMessage = async (
 				<Text>
 					Organization: <Text color="blue">{organization.name}</Text>
 				</Text>
-				<Text color="green">{products.length} Products Created:</Text>
-
-				{products.map((product) => (
-					<Text key={product.id}>- {product.name}</Text>
-				))}
+				{products.length > 0 && (
+					<>
+						<Text color="green">{products.length} Products Created:</Text>
+						{products.map((product) => (
+							<Text key={product.id}>- {product.name}</Text>
+						))}
+					</>
+				)}
+				{createdDiscounts.length > 0 && (
+					<>
+						<Text color="green">
+							{createdDiscounts.length} Discounts Created:
+						</Text>
+						{createdDiscounts.map((discount) => (
+							<Text key={discount.id}>
+								- {discount.name} ({discount.code})
+							</Text>
+						))}
+					</>
+				)}
 			</Box>
 		</Box>,
 	);

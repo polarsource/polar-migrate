@@ -1,7 +1,11 @@
+import fs from "node:fs";
+import https from "node:https";
+import os from "node:os";
+import path from "node:path";
 import {
-	listFiles,
 	type ListProducts,
 	type ListVariants,
+	listFiles,
 } from "@lemonsqueezy/lemonsqueezy.js";
 import type { Polar } from "@polar-sh/sdk";
 import type {
@@ -19,13 +23,9 @@ import type {
 	ProductRecurringCreate,
 	Timeframe,
 } from "@polar-sh/sdk/models/components";
-import fs from "node:fs";
-import path from "node:path";
-import os from "node:os";
 import mime from "mime-types";
-import https from "node:https";
-import { Upload } from "./upload.js";
 import { uploadFailedMessage, uploadMessage } from "./ui/upload.js";
+import { Upload } from "./upload.js";
 
 const resolveInterval = (
 	interval: ListVariants["data"][number]["attributes"]["interval"],
@@ -187,7 +187,10 @@ export const createProduct = async (
 		await uploadFailedMessage();
 	}
 
-	return product;
+	return {
+		variantId: variant.id,
+		product,
+	};
 };
 
 const handleFiles = async (
