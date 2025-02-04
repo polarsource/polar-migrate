@@ -8,24 +8,22 @@ import {
 	listFiles,
 } from "@lemonsqueezy/lemonsqueezy.js";
 import type { Polar } from "@polar-sh/sdk";
-import type {
-	BenefitLicenseKeyExpirationProperties,
-	FileRead,
-	Interval,
-	Organization,
-	Product,
-	ProductOneTimeCreate,
-	ProductPriceOneTimeCustomCreate,
-	ProductPriceOneTimeFixedCreate,
-	ProductPriceOneTimeFreeCreate,
-	ProductPriceRecurringFixedCreate,
-	ProductPriceRecurringFreeCreate,
-	ProductRecurringCreate,
-	Timeframe,
-} from "@polar-sh/sdk/models/components";
 import mime from "mime-types";
 import { uploadFailedMessage, uploadMessage } from "./ui/upload.js";
 import { Upload } from "./upload.js";
+import type { Interval } from "@polar-sh/sdk/models/components/interval.js";
+import type { ProductPriceOneTimeCustomCreate } from "@polar-sh/sdk/models/components/productpriceonetimecustomcreate.js";
+import type { ProductPriceOneTimeFreeCreate } from "@polar-sh/sdk/models/components/productpriceonetimefreecreate.js";
+import type { ProductPriceRecurringFixedCreate } from "@polar-sh/sdk/models/components/productpricerecurringfixedcreate.js";
+import type { ProductPriceOneTimeFixedCreate } from "@polar-sh/sdk/models/components/productpriceonetimefixedcreate.js";
+import type { ProductPriceRecurringFreeCreate } from "@polar-sh/sdk/models/components/productpricerecurringfreecreate.js";
+import type { Timeframe } from "@polar-sh/sdk/models/components/benefitlicensekeyexpirationproperties.js";
+import type { BenefitLicenseKeyExpirationProperties } from "@polar-sh/sdk/models/components/benefitlicensekeyexpirationproperties.js";
+import type { Organization } from "@polar-sh/sdk/models/components/organization.js";
+import type { ProductOneTimeCreate } from "@polar-sh/sdk/models/components/productonetimecreate.js";
+import type { ProductRecurringCreate } from "@polar-sh/sdk/models/components/productrecurringcreate.js";
+import type { Product } from "@polar-sh/sdk/models/components/product.js";
+import type { FileRead } from "@polar-sh/sdk/models/components/listresourcefileread.js";
 
 const resolveInterval = (
 	interval: ListVariants["data"][number]["attributes"]["interval"],
@@ -166,7 +164,7 @@ export const createProduct = async (
 				activations: variant.attributes.license_activation_limit
 					? {
 							limit: variant.attributes.license_activation_limit,
-							enableUserAdmin: true,
+							enableCustomerAdmin: true,
 						}
 					: undefined,
 			},

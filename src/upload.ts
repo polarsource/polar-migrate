@@ -1,14 +1,12 @@
 import type { ReadStream } from "node:fs";
 import type { Polar } from "@polar-sh/sdk";
-import type {
-	FileCreate,
-	FileRead,
-	FileUpload,
-	Organization,
-	S3FileCreatePart,
-	S3FileUploadCompletedPart,
-	S3FileUploadPart,
-} from "@polar-sh/sdk/models/components";
+import type { Organization } from "@polar-sh/sdk/models/components/organization.js";
+import type { FileUpload } from "@polar-sh/sdk/models/components/fileupload.js";
+import type { FileRead } from "@polar-sh/sdk/models/components/listresourcefileread.js";
+import type { S3FileCreatePart } from "@polar-sh/sdk/models/components/s3filecreatepart.js";
+import type { S3FileUploadPart } from "@polar-sh/sdk/models/components/s3fileuploadpart.js";
+import type { S3FileUploadCompletedPart } from "@polar-sh/sdk/models/components/s3fileuploadcompletedpart.js";
+import type { FileCreate } from "@polar-sh/sdk/models/components/filecreate.js";
 
 const CHUNK_SIZE = 10000000; // 10MB
 

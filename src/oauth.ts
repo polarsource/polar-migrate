@@ -32,6 +32,8 @@ const config = {
 		"files:write",
 		"discounts:read",
 		"discounts:write",
+		"customers:read",
+		"customers:write",
 	],
 	redirectUrl: "http://127.0.0.1:3333/oauth/callback",
 };
@@ -111,6 +113,7 @@ function buildAuthorizationUrl(
 	url += `&state=${encodeURIComponent(state)}`;
 	url += `&code_challenge=${encodeURIComponent(codeChallenge)}`;
 	url += "&code_challenge_method=S256";
+
 	return url;
 }
 

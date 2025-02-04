@@ -1,14 +1,16 @@
 import { StatusMessage } from "@inkjs/ui";
-import type { Discount } from "@polar-sh/sdk/models/components/index.js";
 import type { Organization } from "@polar-sh/sdk/models/components/organization.js";
 import type { Product } from "@polar-sh/sdk/models/components/product.js";
+import type { Discount } from "@polar-sh/sdk/models/components/discount.js";
 import { Box, Text, render } from "ink";
 import React from "react";
+import type { Customer } from "@polar-sh/sdk/models/components/customer.js";
 
 export const successMessage = async (
 	organization: Organization,
 	products: Product[],
 	createdDiscounts: Discount[],
+	customers: Customer[],
 	server: "sandbox" | "production",
 ) => {
 	const { unmount, waitUntilExit } = render(
@@ -42,6 +44,9 @@ export const successMessage = async (
 							</Text>
 						))}
 					</>
+				)}
+				{customers.length > 0 && (
+					<Text color="green">{customers.length} Customers Imported</Text>
 				)}
 			</Box>
 		</Box>,

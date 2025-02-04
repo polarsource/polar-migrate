@@ -1,6 +1,5 @@
 import { listDiscounts } from "@lemonsqueezy/lemonsqueezy.js";
 import { Polar } from "@polar-sh/sdk";
-import type { Discount } from "@polar-sh/sdk/models/components/index.js";
 import type { Product } from "@polar-sh/sdk/models/components/product.js";
 import meow from "meow";
 import open from "open";
@@ -14,6 +13,10 @@ import { storePrompt } from "./prompts/store.js";
 import { variantsPrompt } from "./prompts/variants.js";
 import { authenticationMessage } from "./ui/authentication.js";
 import { successMessage } from "./ui/success.js";
+import type { Discount } from "@polar-sh/sdk/models/components/discount.js";
+import { importCustomers } from "./customers.js";
+import { customersMessage } from "./ui/customers.js";
+import type { Customer } from "@polar-sh/sdk/models/components/customer.js";
 
 process.on("uncaughtException", (error) => {
 	console.error(error);
@@ -171,10 +174,19 @@ meow(
 		console.error(e);
 	}
 
+	const customers = await customersMessage(
+		importCustomers(polar, store, organization),
+	);
+
+	const customersWithoutNulls = customers.filter(
+		(customer): customer is Customer => customer !== null,
+	);
+
 	await successMessage(
 		organization,
 		createdProducts.map((p) => p.product),
 		createdDiscounts,
+		customersWithoutNulls,
 		server,
 	);
 
