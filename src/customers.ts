@@ -1,7 +1,7 @@
 import {
 	type Customer,
-	listCustomers,
 	type Store,
+	listCustomers,
 } from "@lemonsqueezy/lemonsqueezy.js";
 import type { Polar } from "@polar-sh/sdk";
 import type { Organization } from "@polar-sh/sdk/models/components/organization.js";

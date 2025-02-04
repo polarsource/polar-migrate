@@ -1,8 +1,11 @@
 import { listDiscounts } from "@lemonsqueezy/lemonsqueezy.js";
 import { Polar } from "@polar-sh/sdk";
+import type { Customer } from "@polar-sh/sdk/models/components/customer.js";
+import type { Discount } from "@polar-sh/sdk/models/components/discount.js";
 import type { Product } from "@polar-sh/sdk/models/components/product.js";
 import meow from "meow";
 import open from "open";
+import { importCustomers } from "./customers.js";
 import { createLemonClient } from "./lemon.js";
 import { login } from "./oauth.js";
 import { resolveOrganization } from "./organization.js";
@@ -12,11 +15,8 @@ import { serverPrompt } from "./prompts/server.js";
 import { storePrompt } from "./prompts/store.js";
 import { variantsPrompt } from "./prompts/variants.js";
 import { authenticationMessage } from "./ui/authentication.js";
-import { successMessage } from "./ui/success.js";
-import type { Discount } from "@polar-sh/sdk/models/components/discount.js";
-import { importCustomers } from "./customers.js";
 import { customersMessage } from "./ui/customers.js";
-import type { Customer } from "@polar-sh/sdk/models/components/customer.js";
+import { successMessage } from "./ui/success.js";
 
 process.on("uncaughtException", (error) => {
 	console.error(error);
