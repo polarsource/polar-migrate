@@ -10,7 +10,6 @@ import {
 import type { Polar } from "@polar-sh/sdk";
 import type { Timeframe } from "@polar-sh/sdk/models/components/benefitlicensekeyexpirationproperties.js";
 import type { BenefitLicenseKeyExpirationProperties } from "@polar-sh/sdk/models/components/benefitlicensekeyexpirationproperties.js";
-import type { Interval } from "@polar-sh/sdk/models/components/interval.js";
 import type { FileRead } from "@polar-sh/sdk/models/components/listresourcefileread.js";
 import type { Organization } from "@polar-sh/sdk/models/components/organization.js";
 import type { Product } from "@polar-sh/sdk/models/components/product.js";
@@ -24,21 +23,18 @@ import type { ProductRecurringCreate } from "@polar-sh/sdk/models/components/pro
 import mime from "mime-types";
 import { uploadFailedMessage, uploadMessage } from "./ui/upload.js";
 import { Upload } from "./upload.js";
+import type { SubscriptionRecurringInterval } from "@polar-sh/sdk/models/components/subscriptionrecurringinterval.js";
 
 const resolveInterval = (
 	interval: ListVariants["data"][number]["attributes"]["interval"],
-): Interval => {
+): SubscriptionRecurringInterval => {
 	switch (interval) {
-		case "day":
-			return "day";
-		case "week":
-			return "week";
 		case "month":
 			return "month";
 		case "year":
 			return "year";
 		default:
-			throw new Error(`Unknown interval: ${interval}`);
+			return "month";
 	}
 };
 
@@ -161,12 +157,12 @@ export const createProduct = async (
 				expires: variant.attributes.is_license_length_unlimited
 					? undefined
 					: resolveLicenseKeyExpiration(variant),
-				activations: variant.attributes.license_activation_limit
-					? {
+				activations: variant.attributes.is_license_limit_unlimited
+					? undefined
+					: {
 							limit: variant.attributes.license_activation_limit,
 							enableCustomerAdmin: true,
-						}
-					: undefined,
+						},
 			},
 			organizationId: organization.id,
 		});

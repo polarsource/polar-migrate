@@ -1,6 +1,6 @@
 {
 	"name": "polar-migrate",
-	"version": "0.1.3",
+	"version": "0.1.4",
 	"license": "Apache-2.0",
 	"bin": "bin/cli.js",
 	"type": "module",
@@ -17,7 +17,7 @@
 	"dependencies": {
 		"@inkjs/ui": "^2.0.0",
 		"@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
-		"@polar-sh/sdk": "^0.22.2",
+		"@polar-sh/sdk": "^0.24.0",
 		"@types/cross-spawn": "^6.0.6",
 		"cross-spawn": "^7.0.3",
 		"ink": "^4.4.1",
