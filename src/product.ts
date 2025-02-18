@@ -13,89 +13,69 @@ import type { BenefitLicenseKeyExpirationProperties } from "@polar-sh/sdk/models
 import type { FileRead } from "@polar-sh/sdk/models/components/listresourcefileread.js";
 import type { Organization } from "@polar-sh/sdk/models/components/organization.js";
 import type { Product } from "@polar-sh/sdk/models/components/product.js";
-import type { ProductOneTimeCreate } from "@polar-sh/sdk/models/components/productonetimecreate.js";
-import type { ProductPriceOneTimeCustomCreate } from "@polar-sh/sdk/models/components/productpriceonetimecustomcreate.js";
-import type { ProductPriceOneTimeFixedCreate } from "@polar-sh/sdk/models/components/productpriceonetimefixedcreate.js";
-import type { ProductPriceOneTimeFreeCreate } from "@polar-sh/sdk/models/components/productpriceonetimefreecreate.js";
-import type { ProductPriceRecurringFixedCreate } from "@polar-sh/sdk/models/components/productpricerecurringfixedcreate.js";
-import type { ProductPriceRecurringFreeCreate } from "@polar-sh/sdk/models/components/productpricerecurringfreecreate.js";
-import type { ProductRecurringCreate } from "@polar-sh/sdk/models/components/productrecurringcreate.js";
 import mime from "mime-types";
 import { uploadFailedMessage, uploadMessage } from "./ui/upload.js";
 import { Upload } from "./upload.js";
 import type { SubscriptionRecurringInterval } from "@polar-sh/sdk/models/components/subscriptionrecurringinterval.js";
+import type { ProductCreate } from "@polar-sh/sdk/models/components/productcreate.js";
+import type { ProductPriceFixedCreate } from "@polar-sh/sdk/models/components/productpricefixedcreate.js";
+import type { ProductPriceCustomCreate } from "@polar-sh/sdk/models/components/productpricecustomcreate.js";
+import type { ProductPriceFreeCreate } from "@polar-sh/sdk/models/components/productpricefreecreate.js";
 
 const resolveInterval = (
 	interval: ListVariants["data"][number]["attributes"]["interval"],
-): SubscriptionRecurringInterval => {
+): SubscriptionRecurringInterval | null => {
 	switch (interval) {
 		case "month":
 			return "month";
 		case "year":
 			return "year";
 		default:
-			return "month";
+			return null;
 	}
 };
 
 const resolvePrice = (
 	variant: ListVariants["data"][number],
 ):
-	| ProductPriceOneTimeFixedCreate
-	| ProductPriceRecurringFixedCreate
-	| ProductPriceOneTimeCustomCreate
-	| ProductPriceOneTimeFreeCreate
-	| ProductPriceRecurringFreeCreate => {
+	| ProductPriceFixedCreate
+	| ProductPriceFreeCreate
+	| ProductPriceCustomCreate => {
 	const priceCurrency = "usd";
 	const priceAmount = variant.attributes.price;
 
-	if (variant.attributes.is_subscription) {
-		const interval = variant.attributes.interval;
-
-		if (priceAmount > 0) {
-			return {
-				type: "recurring",
-				recurringInterval: resolveInterval(interval),
-				amountType: "fixed",
-				priceAmount,
-				priceCurrency,
-			} as ProductPriceRecurringFixedCreate;
-		}
-
+	if (priceAmount > 0) {
 		return {
-			type: "recurring",
-			amountType: "free",
-			recurringInterval: resolveInterval(interval),
-		} as ProductPriceRecurringFreeCreate;
+			amountType: "fixed",
+			priceAmount,
+			priceCurrency,
+		};
 	}
 
 	const payWhatYouWant = variant.attributes.pay_what_you_want;
 
 	if (payWhatYouWant) {
 		return {
-			type: "one_time",
 			amountType: "custom",
 			priceAmount,
 			priceCurrency,
 			minimumAmount:
 				variant.attributes.min_price < 50 ? 50 : variant.attributes.min_price,
 			presetAmount: variant.attributes.suggested_price,
-		} as ProductPriceOneTimeCustomCreate;
+		} as ProductPriceCustomCreate;
 	}
 
 	if (priceAmount > 0) {
 		return {
-			type: "one_time",
 			amountType: "fixed",
 			priceAmount,
 			priceCurrency,
-		} as ProductPriceOneTimeFixedCreate;
+		} as ProductPriceFixedCreate;
 	}
 
 	return {
-		type: "one_time",
 		amountType: "free",
-	} as ProductPriceOneTimeFreeCreate;
+	};
 };
 
 const resolveLicenseKeyExpiration = (
@@ -139,10 +119,10 @@ export const createProduct = async (
 		: variant.attributes.description;
 
 	// Split creation based on price type
-	const createParams: ProductOneTimeCreate | ProductRecurringCreate = {
+	const createParams: ProductCreate = {
 		name: productName,
-		// @ts-expect-error
-		prices: [price] as const,
+		prices: [price],
+		recurringInterval: resolveInterval(variant.attributes.interval),
 		description: description,
 		organizationId: organization.id,
 	};
