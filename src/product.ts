@@ -13,14 +13,14 @@ import type { BenefitLicenseKeyExpirationProperties } from "@polar-sh/sdk/models
 import type { FileRead } from "@polar-sh/sdk/models/components/listresourcefileread.js";
 import type { Organization } from "@polar-sh/sdk/models/components/organization.js";
 import type { Product } from "@polar-sh/sdk/models/components/product.js";
+import type { ProductCreate } from "@polar-sh/sdk/models/components/productcreate.js";
+import type { ProductPriceCustomCreate } from "@polar-sh/sdk/models/components/productpricecustomcreate.js";
+import type { ProductPriceFixedCreate } from "@polar-sh/sdk/models/components/productpricefixedcreate.js";
+import type { ProductPriceFreeCreate } from "@polar-sh/sdk/models/components/productpricefreecreate.js";
+import type { SubscriptionRecurringInterval } from "@polar-sh/sdk/models/components/subscriptionrecurringinterval.js";
 import mime from "mime-types";
 import { uploadFailedMessage, uploadMessage } from "./ui/upload.js";
 import { Upload } from "./upload.js";
-import type { SubscriptionRecurringInterval } from "@polar-sh/sdk/models/components/subscriptionrecurringinterval.js";
-import type { ProductCreate } from "@polar-sh/sdk/models/components/productcreate.js";
-import type { ProductPriceFixedCreate } from "@polar-sh/sdk/models/components/productpricefixedcreate.js";
-import type { ProductPriceCustomCreate } from "@polar-sh/sdk/models/components/productpricecustomcreate.js";
-import type { ProductPriceFreeCreate } from "@polar-sh/sdk/models/components/productpricefreecreate.js";
 
 const resolveInterval = (
 	interval: ListVariants["data"][number]["attributes"]["interval"],
