@@ -132,7 +132,7 @@ export const createProduct = async (
 	if (variant.attributes.has_license_keys) {
 		const benefit = await api.benefits.create({
 			type: "license_keys",
-			description: `${productName} License Key`,
+			description: `${productName.slice(0, 28)} License Key`,
 			properties: {
 				expires: variant.attributes.is_license_length_unlimited
 					? undefined
