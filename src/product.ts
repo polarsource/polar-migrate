@@ -122,7 +122,9 @@ export const createProduct = async (
 	const createParams: ProductCreate = {
 		name: productName,
 		prices: [price],
-		recurringInterval: resolveInterval(variant.attributes.interval),
+		recurringInterval: variant.attributes.is_subscription
+			? resolveInterval(variant.attributes.interval)
+			: null,
 		description: description,
 		organizationId: organization.id,
 	};
