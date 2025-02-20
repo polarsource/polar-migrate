@@ -12,12 +12,12 @@ import { resolveOrganization } from "./organization.js";
 import { createProduct } from "./product.js";
 import { lemonAccessKeyPrompt } from "./prompts/lemonAccessKey.js";
 import { serverPrompt } from "./prompts/server.js";
+import { stepsPrompt } from "./prompts/steps.js";
 import { storePrompt } from "./prompts/store.js";
 import { variantsPrompt } from "./prompts/variants.js";
 import { authenticationMessage } from "./ui/authentication.js";
 import { customersMessage } from "./ui/customers.js";
 import { successMessage } from "./ui/success.js";
-import { stepsPrompt } from "./prompts/steps.js";
 
 process.on("uncaughtException", (error) => {
 	console.error(error);
