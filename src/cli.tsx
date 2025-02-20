@@ -170,9 +170,7 @@ meow(
 				});
 			}),
 		);
-	} catch (e) {
-		console.error(e);
-	}
+	} catch (e) {}
 
 	const customers = await customersMessage(
 		importCustomers(polar, store, organization),

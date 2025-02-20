@@ -23,7 +23,6 @@ const importCustomer = async (
 			},
 		});
 	} catch (error) {
-		console.error("Failed to create customer:", error);
 		return null;
 	}
 };
@@ -37,12 +36,43 @@ export const importCustomers = async (
 		filter: {
 			storeId: store.id,
 		},
+		page: {
+			number: 1,
+			size: 50,
+		},
 	});
+
+	const allCustomers = [];
+	let currentPage = 1;
+	const lastPage = customers.data?.meta.page.lastPage ?? 1;
+
+	// Get first page results
+	if (customers.data?.data) {
+		allCustomers.push(...customers.data.data);
+	}
+
+	// Get remaining pages
+	while (currentPage < lastPage) {
+		currentPage++;
+		const nextPage = await listCustomers({
+			filter: {
+				storeId: store.id,
+			},
+			page: {
+				number: currentPage,
+				size: 50,
+			},
+		});
+
+		if (nextPage.data?.data) {
+			allCustomers.push(...nextPage.data.data);
+		}
+	}
 
 	return promiseAllInBatches(
 		(customer) => importCustomer(polar, customer, organization),
-		customers.data?.data ?? [],
-		20,
+		allCustomers,
+		50,
 	);
 };
 
