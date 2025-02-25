@@ -13,7 +13,10 @@
 		"test": "prettier --check . && xo && ava",
 		"check": "biome check --write ./src"
 	},
-	"files": ["dist", "bin"],
+	"files": [
+		"dist",
+		"bin"
+	],
 	"dependencies": {
 		"@inkjs/ui": "^2.0.0",
 		"@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
@@ -26,6 +29,7 @@
 		"meow": "^11.0.0",
 		"mime-types": "^2.1.35",
 		"open": "^10.1.0",
+		"p-queue": "^8.1.0",
 		"prompts": "^2.4.2",
 		"react": "^18.2.0",
 		"standardwebhooks": "1.0.0",
@@ -56,7 +60,9 @@
 			"ts": "module",
 			"tsx": "module"
 		},
-		"nodeArguments": ["--loader=ts-node/esm"]
+		"nodeArguments": [
+			"--loader=ts-node/esm"
+		]
 	},
 	"xo": {
 		"extends": "xo-react",
