@@ -1,27 +1,27 @@
-import fs from 'node:fs';
-import https from 'node:https';
-import os from 'node:os';
-import path from 'node:path';
+import fs from "node:fs";
+import https from "node:https";
+import os from "node:os";
+import path from "node:path";
 import {
 	type ListProducts,
 	type ListVariants,
 	listFiles,
-} from '@lemonsqueezy/lemonsqueezy.js';
-import type {Polar} from '@polar-sh/sdk';
-import type {Timeframe} from '@polar-sh/sdk/models/components/benefitlicensekeyexpirationproperties.js';
-import type {BenefitLicenseKeyExpirationProperties} from '@polar-sh/sdk/models/components/benefitlicensekeyexpirationproperties.js';
-import type {FileRead} from '@polar-sh/sdk/models/components/listresourcefileread.js';
-import type {Organization} from '@polar-sh/sdk/models/components/organization.js';
-import type {Product} from '@polar-sh/sdk/models/components/product.js';
-import type {ProductCreate} from '@polar-sh/sdk/models/components/productcreate.js';
-import type {ProductPriceCustomCreate} from '@polar-sh/sdk/models/components/productpricecustomcreate.js';
-import type {ProductPriceFixedCreate} from '@polar-sh/sdk/models/components/productpricefixedcreate.js';
-import type {ProductPriceFreeCreate} from '@polar-sh/sdk/models/components/productpricefreecreate.js';
-import type {SubscriptionRecurringInterval} from '@polar-sh/sdk/models/components/subscriptionrecurringinterval.js';
-import mime from 'mime-types';
-import PQueue from 'p-queue';
-import {uploadFailedMessage, uploadMessage} from './ui/upload.js';
-import {Upload} from './upload.js';
+} from "@lemonsqueezy/lemonsqueezy.js";
+import type { Polar } from "@polar-sh/sdk";
+import type { Timeframe } from "@polar-sh/sdk/models/components/benefitlicensekeyexpirationproperties.js";
+import type { BenefitLicenseKeyExpirationProperties } from "@polar-sh/sdk/models/components/benefitlicensekeyexpirationproperties.js";
+import type { FileRead } from "@polar-sh/sdk/models/components/listresourcefileread.js";
+import type { Organization } from "@polar-sh/sdk/models/components/organization.js";
+import type { Product } from "@polar-sh/sdk/models/components/product.js";
+import type { ProductCreate } from "@polar-sh/sdk/models/components/productcreate.js";
+import type { ProductPriceCustomCreate } from "@polar-sh/sdk/models/components/productpricecustomcreate.js";
+import type { ProductPriceFixedCreate } from "@polar-sh/sdk/models/components/productpricefixedcreate.js";
+import type { ProductPriceFreeCreate } from "@polar-sh/sdk/models/components/productpricefreecreate.js";
+import type { SubscriptionRecurringInterval } from "@polar-sh/sdk/models/components/subscriptionrecurringinterval.js";
+import mime from "mime-types";
+import PQueue from "p-queue";
+import { uploadFailedMessage, uploadMessage } from "./ui/upload.js";
+import { Upload } from "./upload.js";
 
 const polarAPIQueue = new PQueue({
 	concurrency: 2,
@@ -35,30 +35,30 @@ const fileOperationsQueue = new PQueue({
 });
 
 const resolveInterval = (
-	interval: ListVariants['data'][number]['attributes']['interval'],
+	interval: ListVariants["data"][number]["attributes"]["interval"],
 ): SubscriptionRecurringInterval | null => {
 	switch (interval) {
-		case 'month':
-			return 'month';
-		case 'year':
-			return 'year';
+		case "month":
+			return "month";
+		case "year":
+			return "year";
 		default:
 			return null;
 	}
 };
 
 const resolvePrice = (
-	variant: ListVariants['data'][number],
+	variant: ListVariants["data"][number],
 ):
 	| ProductPriceFixedCreate
 	| ProductPriceFreeCreate
 	| ProductPriceCustomCreate => {
-	const priceCurrency = 'usd';
+	const priceCurrency = "usd";
 	const priceAmount = variant.attributes.price;
 
 	if (priceAmount > 0) {
 		return {
-			amountType: 'fixed',
+			amountType: "fixed",
 			priceAmount,
 			priceCurrency,
 		};
@@ -68,7 +68,7 @@ const resolvePrice = (
 
 	if (payWhatYouWant) {
 		return {
-			amountType: 'custom',
+			amountType: "custom",
 			priceAmount,
 			priceCurrency,
 			minimumAmount:
@@ -79,31 +79,31 @@ const resolvePrice = (
 
 	if (priceAmount > 0) {
 		return {
-			amountType: 'fixed',
+			amountType: "fixed",
 			priceAmount,
 			priceCurrency,
 		} as ProductPriceFixedCreate;
 	}
 
 	return {
-		amountType: 'free',
+		amountType: "free",
 	};
 };
 
 const resolveLicenseKeyExpiration = (
-	variant: ListVariants['data'][number],
+	variant: ListVariants["data"][number],
 ): BenefitLicenseKeyExpirationProperties => {
 	let timeframe: Timeframe;
 
 	switch (variant.attributes.license_length_unit) {
-		case 'days':
-			timeframe = 'day';
+		case "days":
+			timeframe = "day";
 			break;
-		case 'months':
-			timeframe = 'month';
+		case "months":
+			timeframe = "month";
 			break;
-		case 'years':
-			timeframe = 'year';
+		case "years":
+			timeframe = "year";
 			break;
 	}
 
@@ -116,14 +116,14 @@ const resolveLicenseKeyExpiration = (
 export const createProduct = async (
 	api: Polar,
 	organization: Organization,
-	variant: ListVariants['data'][number],
-	lemonProduct: ListProducts['data'][number],
+	variant: ListVariants["data"][number],
+	lemonProduct: ListProducts["data"][number],
 ) => {
 	const price = resolvePrice(variant);
-	const isDefault = variant.attributes.name === 'Default';
+	const isDefault = variant.attributes.name === "Default";
 
 	const productName = isDefault
-		? lemonProduct?.attributes.name ?? variant.attributes.name
+		? (lemonProduct?.attributes.name ?? variant.attributes.name)
 		: `${lemonProduct?.attributes.name} - ${variant.attributes.name}`;
 
 	const description = isDefault
@@ -146,13 +146,13 @@ export const createProduct = async (
 	);
 
 	if (!product) {
-		throw new Error('Product creation failed');
+		throw new Error("Product creation failed");
 	}
 
 	if (variant.attributes.has_license_keys) {
 		const benefit = await polarAPIQueue.add(() =>
 			api.benefits.create({
-				type: 'license_keys',
+				type: "license_keys",
 				description: `${productName.slice(0, 28)} License Key`,
 				properties: {
 					expires: variant.attributes.is_license_length_unlimited
@@ -163,14 +163,14 @@ export const createProduct = async (
 						: {
 								limit: variant.attributes.license_activation_limit,
 								enableCustomerAdmin: true,
-						  },
+							},
 				},
 				organizationId: organization.id,
 			}),
 		);
 
 		if (!benefit) {
-			throw new Error('Product creation failed');
+			throw new Error("Product creation failed");
 		}
 
 		await polarAPIQueue.add(() =>
@@ -198,7 +198,7 @@ export const createProduct = async (
 const handleFiles = async (
 	api: Polar,
 	organization: Organization,
-	variant: ListVariants['data'][number],
+	variant: ListVariants["data"][number],
 	product: Product,
 ) => {
 	const filesResponse = await polarAPIQueue.add(() =>
@@ -210,17 +210,17 @@ const handleFiles = async (
 	);
 
 	if (!filesResponse) {
-		throw new Error('Files response failed');
+		throw new Error("Files response failed");
 	}
 
 	// Group files with same variant id and download them
-	const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'polar-'));
+	const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "polar-"));
 
 	const groupedFiles =
 		filesResponse.data?.data?.reduce<
-			Record<string, {downloadUrl: string; filePath: string}[]>
+			Record<string, { downloadUrl: string; filePath: string }[]>
 		>((acc, file) => {
-			if ('attributes' in file && 'variant_id' in file.attributes) {
+			if ("attributes" in file && "variant_id" in file.attributes) {
 				const filePath = path.join(tempDir, file.attributes.name);
 				const url = new URL(file.attributes.download_url);
 
@@ -239,7 +239,7 @@ const handleFiles = async (
 	await Promise.all(
 		Object.values(groupedFiles)
 			.flat()
-			.map(file =>
+			.map((file) =>
 				fileOperationsQueue.add(() =>
 					downloadFile(file.downloadUrl, file.filePath),
 				),
@@ -248,7 +248,7 @@ const handleFiles = async (
 
 	// Create one benefit per variant, upload the files to the benefit, and add the benefit to the product
 	for (const [_, files] of Object.entries(groupedFiles)) {
-		const uploadPromises = files.map(file =>
+		const uploadPromises = files.map((file) =>
 			fileOperationsQueue.add<FileRead>(() =>
 				uploadFile(api, organization, file.filePath),
 			),
@@ -264,17 +264,17 @@ const handleFiles = async (
 
 		const benefit = await polarAPIQueue.add(() =>
 			api.benefits.create({
-				type: 'downloadables',
+				type: "downloadables",
 				description: product.name,
 				properties: {
-					files: validFileUploads.map(file => file.id),
+					files: validFileUploads.map((file) => file.id),
 				},
 				organizationId: organization.id,
 			}),
 		);
 
 		if (!benefit) {
-			throw new Error('Benefit creation failed');
+			throw new Error("Benefit creation failed");
 		}
 
 		await polarAPIQueue.add(() =>
@@ -291,7 +291,7 @@ const handleFiles = async (
 	await Promise.all(
 		Object.values(groupedFiles)
 			.flat()
-			.map(file => fs.promises.unlink(file.filePath)),
+			.map((file) => fs.promises.unlink(file.filePath)),
 	);
 
 	await fs.promises.rmdir(tempDir);
@@ -300,17 +300,17 @@ const handleFiles = async (
 const downloadFile = (url: string, filePath: string) => {
 	return new Promise<void>((resolve, reject) => {
 		const options = {
-			method: 'GET',
+			method: "GET",
 			headers: {
-				'Content-Type': 'application/octet-stream',
+				"Content-Type": "application/octet-stream",
 			},
 		};
 
 		const writer = fs.createWriteStream(filePath);
 
-		const request = https.get(url, options, response => {
+		const request = https.get(url, options, (response) => {
 			if (response.statusCode !== 200) {
-				fs.unlink(filePath, e => {
+				fs.unlink(filePath, (e) => {
 					if (e) {
 						console.error(e);
 					}
@@ -321,26 +321,26 @@ const downloadFile = (url: string, filePath: string) => {
 
 			response.pipe(writer);
 
-			writer.on('finish', () => {
+			writer.on("finish", () => {
 				writer.close();
 				resolve();
 			});
 		});
 
-		request.on('error', err => {
+		request.on("error", (err) => {
 			console.error(err);
 
-			fs.unlink(filePath, e => {
+			fs.unlink(filePath, (e) => {
 				if (e) {
 					console.error(e);
 				}
 			});
 		});
 
-		writer.on('error', err => {
+		writer.on("error", (err) => {
 			console.error(err);
 
-			fs.unlink(filePath, e => {
+			fs.unlink(filePath, (e) => {
 				if (e) {
 					console.error(e);
 				}
@@ -357,9 +357,9 @@ const uploadFile = async (
 	filePath: string,
 ): Promise<FileRead> => {
 	const readStream = fs.createReadStream(filePath);
-	const mimeType = mime.lookup(filePath) || 'application/octet-stream';
+	const mimeType = mime.lookup(filePath) || "application/octet-stream";
 
-	const fileUploadPromise = new Promise<FileRead>(resolve => {
+	const fileUploadPromise = new Promise<FileRead>((resolve) => {
 		const upload = new Upload(api, {
 			organization,
 			file: {
