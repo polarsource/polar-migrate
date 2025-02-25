@@ -19,8 +19,20 @@ import type { ProductPriceFixedCreate } from "@polar-sh/sdk/models/components/pr
 import type { ProductPriceFreeCreate } from "@polar-sh/sdk/models/components/productpricefreecreate.js";
 import type { SubscriptionRecurringInterval } from "@polar-sh/sdk/models/components/subscriptionrecurringinterval.js";
 import mime from "mime-types";
+import PQueue from "p-queue";
 import { uploadFailedMessage, uploadMessage } from "./ui/upload.js";
 import { Upload } from "./upload.js";
+
+const polarAPIQueue = new PQueue({
+	concurrency: 2,
+	intervalCap: 5,
+	interval: 1000,
+});
+const fileOperationsQueue = new PQueue({
+	concurrency: 3,
+	intervalCap: 10,
+	interval: 1000,
+});
 
 const resolveInterval = (
 	interval: ListVariants["data"][number]["attributes"]["interval"],
@@ -129,32 +141,46 @@ export const createProduct = async (
 		organizationId: organization.id,
 	};
 
-	const product = await api.products.create(createParams);
+	const product = await polarAPIQueue.add(() =>
+		api.products.create(createParams),
+	);
+
+	if (!product) {
+		throw new Error("Product creation failed");
+	}
 
 	if (variant.attributes.has_license_keys) {
-		const benefit = await api.benefits.create({
-			type: "license_keys",
-			description: `${productName.slice(0, 28)} License Key`,
-			properties: {
-				expires: variant.attributes.is_license_length_unlimited
-					? undefined
-					: resolveLicenseKeyExpiration(variant),
-				activations: variant.attributes.is_license_limit_unlimited
-					? undefined
-					: {
-							limit: variant.attributes.license_activation_limit,
-							enableCustomerAdmin: true,
-						},
-			},
-			organizationId: organization.id,
-		});
+		const benefit = await polarAPIQueue.add(() =>
+			api.benefits.create({
+				type: "license_keys",
+				description: `${productName.slice(0, 28)} License Key`,
+				properties: {
+					expires: variant.attributes.is_license_length_unlimited
+						? undefined
+						: resolveLicenseKeyExpiration(variant),
+					activations: variant.attributes.is_license_limit_unlimited
+						? undefined
+						: {
+								limit: variant.attributes.license_activation_limit,
+								enableCustomerAdmin: true,
+							},
+				},
+				organizationId: organization.id,
+			}),
+		);
 
-		await api.products.updateBenefits({
-			id: product.id,
-			productBenefitsUpdate: {
-				benefits: [benefit.id],
-			},
-		});
+		if (!benefit) {
+			throw new Error("Product creation failed");
+		}
+
+		await polarAPIQueue.add(() =>
+			api.products.updateBenefits({
+				id: product.id,
+				productBenefitsUpdate: {
+					benefits: [benefit.id],
+				},
+			}),
+		);
 	}
 
 	try {
@@ -175,17 +201,23 @@ const handleFiles = async (
 	variant: ListVariants["data"][number],
 	product: Product,
 ) => {
-	const files = await listFiles({
-		filter: {
-			variantId: variant.id,
-		},
-	});
+	const filesResponse = await polarAPIQueue.add(() =>
+		listFiles({
+			filter: {
+				variantId: variant.id,
+			},
+		}),
+	);
+
+	if (!filesResponse) {
+		throw new Error("Files response failed");
+	}
 
 	// Group files with same variant id and download them
 	const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "polar-"));
 
 	const groupedFiles =
-		files.data?.data?.reduce<
+		filesResponse.data?.data?.reduce<
 			Record<string, { downloadUrl: string; filePath: string }[]>
 		>((acc, file) => {
 			if ("attributes" in file && "variant_id" in file.attributes) {
@@ -207,31 +239,52 @@ const handleFiles = async (
 	await Promise.all(
 		Object.values(groupedFiles)
 			.flat()
-			.map((file) => downloadFile(file.downloadUrl, file.filePath)),
+			.map((file) =>
+				fileOperationsQueue.add(() =>
+					downloadFile(file.downloadUrl, file.filePath),
+				),
+			),
 	);
 
 	// Create one benefit per variant, upload the files to the benefit, and add the benefit to the product
-
 	for (const [_, files] of Object.entries(groupedFiles)) {
-		const fileUploads = await Promise.all(
-			files.map((file) => uploadFile(api, organization, file.filePath)),
+		const uploadPromises = files.map((file) =>
+			fileOperationsQueue.add<FileRead>(() =>
+				uploadFile(api, organization, file.filePath),
+			),
 		);
 
-		const benefit = await api.benefits.create({
-			type: "downloadables",
-			description: product.name,
-			properties: {
-				files: fileUploads.map((file) => file.id),
-			},
-			organizationId: organization.id,
-		});
+		// Wait for all uploads to complete
+		const fileUploads = await Promise.all(uploadPromises);
+		const validFileUploads = fileUploads.filter(Boolean) as FileRead[];
 
-		await api.products.updateBenefits({
-			id: product.id,
-			productBenefitsUpdate: {
-				benefits: [benefit.id],
-			},
-		});
+		if (validFileUploads.length === 0) {
+			continue; // Skip if no files were uploaded successfully
+		}
+
+		const benefit = await polarAPIQueue.add(() =>
+			api.benefits.create({
+				type: "downloadables",
+				description: product.name,
+				properties: {
+					files: validFileUploads.map((file) => file.id),
+				},
+				organizationId: organization.id,
+			}),
+		);
+
+		if (!benefit) {
+			throw new Error("Benefit creation failed");
+		}
+
+		await polarAPIQueue.add(() =>
+			api.products.updateBenefits({
+				id: product.id,
+				productBenefitsUpdate: {
+					benefits: [benefit.id],
+				},
+			}),
+		);
 	}
 
 	// Clean up temporary files
