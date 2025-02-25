@@ -1,4 +1,3 @@
-import { listDiscounts } from "@lemonsqueezy/lemonsqueezy.js";
 import { Polar } from "@polar-sh/sdk";
 import type { Customer } from "@polar-sh/sdk/models/components/customer.js";
 import type { Discount } from "@polar-sh/sdk/models/components/discount.js";
@@ -119,15 +118,47 @@ meow(
 	}
 
 	if (steps.includes("discounts")) {
-		const discounts = await listDiscounts({
+		const discounts = await lemon.listDiscounts({
 			filter: {
 				storeId: store.id,
 			},
 			include: ["variants"],
+			page: {
+				number: 1,
+				size: 50,
+			},
 		});
 
+		const allDiscounts = [];
+		let currentPage = 1;
+		const lastPage = discounts.data?.meta.page.lastPage ?? 1;
+
+		// Get first page results
+		if (discounts.data?.data) {
+			allDiscounts.push(...discounts.data.data);
+		}
+
+		// Get remaining pages
+		while (currentPage < lastPage) {
+			currentPage++;
+			const nextPage = await lemon.listDiscounts({
+				filter: {
+					storeId: store.id,
+				},
+				include: ["variants"],
+				page: {
+					number: currentPage,
+					size: 50,
+				},
+			});
+
+			if (nextPage.data?.data) {
+				allDiscounts.push(...nextPage.data.data);
+			}
+		}
+
 		const publishedDiscounts =
-			discounts.data?.data?.filter(
+			allDiscounts.filter(
 				(discount) => discount.attributes.status === "published",
 			) ?? [];
 
