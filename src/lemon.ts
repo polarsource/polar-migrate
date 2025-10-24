@@ -6,12 +6,14 @@ import {
 	listProducts,
 	listStores,
 	listVariants,
-} from "@lemonsqueezy/lemonsqueezy.js";
+} from '@lemonsqueezy/lemonsqueezy.js';
 
-export const createLemonClient = async (apiKey: string) => {
-	await lemonSqueezySetup({
+export const createLemonClient = (apiKey: string) => {
+	lemonSqueezySetup({
 		apiKey,
-		onError: (error) => console.error("Error!", error),
+		onError: error => {
+			console.error('Error!', error);
+		},
 	});
 
 	return {

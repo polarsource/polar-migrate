@@ -2,13 +2,13 @@ import {
 	type Customer,
 	type Store,
 	listCustomers,
-} from "@lemonsqueezy/lemonsqueezy.js";
-import type { Polar } from "@polar-sh/sdk";
-import type { Organization } from "@polar-sh/sdk/models/components/organization.js";
+} from '@lemonsqueezy/lemonsqueezy.js';
+import type {Polar} from '@polar-sh/sdk';
+import type {Organization} from '@polar-sh/sdk/models/components/organization.js';
 
 const importCustomer = async (
 	polar: Polar,
-	customer: Customer["data"],
+	customer: Customer['data'],
 	organization: Organization,
 ) => {
 	try {
@@ -22,14 +22,14 @@ const importCustomer = async (
 				country: customer.attributes.country as string,
 			},
 		});
-	} catch (error) {
+	} catch {
 		return null;
 	}
 };
 
 export const importCustomers = async (
 	polar: Polar,
-	store: Store["data"],
+	store: Store['data'],
 	organization: Organization,
 ) => {
 	const customers = await listCustomers({
@@ -70,7 +70,7 @@ export const importCustomers = async (
 	}
 
 	return promiseAllInBatches(
-		(customer) => importCustomer(polar, customer, organization),
+		async customer => importCustomer(polar, customer, organization),
 		allCustomers,
 		50,
 	);
@@ -98,9 +98,10 @@ async function promiseAllInBatches<A, B>(
 		const itemsForBatch = items.slice(position, position + batchSize);
 		results = [
 			...results,
-			...(await Promise.all(itemsForBatch.map((item) => task(item)))),
+			...(await Promise.all(itemsForBatch.map(async item => task(item)))),
 		];
 		position += batchSize;
 	}
+
 	return results;
 }

@@ -1,19 +1,19 @@
-import { StatusMessage } from "@inkjs/ui";
-import type { Customer } from "@polar-sh/sdk/models/components/customer.js";
-import type { Discount } from "@polar-sh/sdk/models/components/discount.js";
-import type { Organization } from "@polar-sh/sdk/models/components/organization.js";
-import type { Product } from "@polar-sh/sdk/models/components/product.js";
-import { Box, Text, render } from "ink";
-import React from "react";
+import {StatusMessage} from '@inkjs/ui';
+import type {Customer} from '@polar-sh/sdk/models/components/customer.js';
+import type {Discount} from '@polar-sh/sdk/models/components/discount.js';
+import type {Organization} from '@polar-sh/sdk/models/components/organization.js';
+import type {Product} from '@polar-sh/sdk/models/components/product.js';
+import {Box, Text, render} from 'ink';
+import React from 'react';
 
 export const successMessage = async (
 	organization: Organization,
 	products: Product[],
 	createdDiscounts: Discount[],
 	customers: Customer[],
-	server: "sandbox" | "production",
+	server: 'sandbox' | 'production',
 ) => {
-	const { unmount, waitUntilExit } = render(
+	const {unmount, waitUntilExit} = render(
 		<Box flexDirection="column" columnGap={2}>
 			<StatusMessage variant="success">
 				<Text>Polar was successfully initialized!</Text>
@@ -28,7 +28,7 @@ export const successMessage = async (
 				{products.length > 0 && (
 					<>
 						<Text color="green">{products.length} Products Created:</Text>
-						{products.map((product) => (
+						{products.map(product => (
 							<Text key={product.id}>- {product.name}</Text>
 						))}
 					</>
@@ -38,7 +38,7 @@ export const successMessage = async (
 						<Text color="green">
 							{createdDiscounts.length} Discounts Created:
 						</Text>
-						{createdDiscounts.map((discount) => (
+						{createdDiscounts.map(discount => (
 							<Text key={discount.id}>
 								- {discount.name} ({discount.code})
 							</Text>

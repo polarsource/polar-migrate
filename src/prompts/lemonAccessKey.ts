@@ -1,11 +1,11 @@
-import prompts from "prompts";
+import prompts from 'prompts';
 
 export const lemonAccessKeyPrompt = async () => {
-	const { lemonAccessKey } = await prompts([
+	const {lemonAccessKey} = await prompts([
 		{
-			type: "password",
-			name: "lemonAccessKey",
-			message: "Enter your LemonSqueezy API Key",
+			type: 'password',
+			name: 'lemonAccessKey',
+			message: 'Enter your LemonSqueezy API Key',
 		},
 	]);
 
