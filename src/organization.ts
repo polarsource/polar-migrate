@@ -1,9 +1,9 @@
-import type { Polar } from "@polar-sh/sdk";
-import type { Organization } from "@polar-sh/sdk/models/components/organization.js";
+import type {Polar} from '@polar-sh/sdk';
+import type {Organization} from '@polar-sh/sdk/models/components/organization.js';
 import {
 	createOrganizationPrompt,
 	selectOrganizationPrompt,
-} from "./prompts/organization.js";
+} from './prompts/organization.js';
 
 export const resolveOrganization = async (
 	api: Polar,
@@ -32,7 +32,7 @@ export const resolveOrganization = async (
 	if (orgExists) {
 		const newSlug = await createOrganizationPrompt();
 
-		return await api.organizations.create({
+		return api.organizations.create({
 			name: newSlug,
 			slug: newSlug,
 		});
@@ -40,7 +40,7 @@ export const resolveOrganization = async (
 
 	const newSlug = await createOrganizationPrompt(storeSlug);
 
-	return await api.organizations.create({
+	return api.organizations.create({
 		name: newSlug,
 		slug: newSlug,
 	});

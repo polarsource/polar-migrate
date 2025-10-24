@@ -1,9 +1,9 @@
-import { Spinner, StatusMessage } from "@inkjs/ui";
-import { Text, render } from "ink";
-import React from "react";
+import {Spinner, StatusMessage} from '@inkjs/ui';
+import {Text, render} from 'ink';
+import React from 'react';
 
 export const uploadMessage = async <T,>(fileUploadPromise: Promise<T>) => {
-	const { unmount, clear, waitUntilExit } = render(
+	const {unmount, clear, waitUntilExit} = render(
 		<Spinner label="Uploading file..." />,
 	);
 
@@ -16,7 +16,7 @@ export const uploadMessage = async <T,>(fileUploadPromise: Promise<T>) => {
 };
 
 export const uploadFailedMessage = async () => {
-	const { unmount, waitUntilExit } = render(
+	const {unmount, waitUntilExit} = render(
 		<StatusMessage variant="warning">
 			<Text>Could not upload files associated with product</Text>
 		</StatusMessage>,

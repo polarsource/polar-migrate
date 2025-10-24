@@ -1,30 +1,30 @@
-import { listDiscounts } from "@lemonsqueezy/lemonsqueezy.js";
-import { Polar } from "@polar-sh/sdk";
-import type { Customer } from "@polar-sh/sdk/models/components/customer.js";
-import type { Discount } from "@polar-sh/sdk/models/components/discount.js";
-import type { Product } from "@polar-sh/sdk/models/components/product.js";
-import meow from "meow";
-import open from "open";
-import { importCustomers } from "./customers.js";
-import { createLemonClient } from "./lemon.js";
-import { login } from "./oauth.js";
-import { resolveOrganization } from "./organization.js";
-import { createProduct } from "./product.js";
-import { lemonAccessKeyPrompt } from "./prompts/lemonAccessKey.js";
-import { serverPrompt } from "./prompts/server.js";
-import { stepsPrompt } from "./prompts/steps.js";
-import { storePrompt } from "./prompts/store.js";
-import { variantsPrompt } from "./prompts/variants.js";
-import { authenticationMessage } from "./ui/authentication.js";
-import { customersMessage } from "./ui/customers.js";
-import { successMessage } from "./ui/success.js";
+import {listDiscounts} from '@lemonsqueezy/lemonsqueezy.js';
+import {Polar} from '@polar-sh/sdk';
+import type {Customer} from '@polar-sh/sdk/models/components/customer.js';
+import type {Discount} from '@polar-sh/sdk/models/components/discount.js';
+import type {Product} from '@polar-sh/sdk/models/components/product.js';
+import meow from 'meow';
+import open from 'open';
+import {importCustomers} from './customers.js';
+import {createLemonClient} from './lemon.js';
+import {login} from './oauth.js';
+import {resolveOrganization} from './organization.js';
+import {createProduct} from './product.js';
+import {lemonAccessKeyPrompt} from './prompts/lemonAccessKey.js';
+import {serverPrompt} from './prompts/server.js';
+import {stepsPrompt} from './prompts/steps.js';
+import {storePrompt} from './prompts/store.js';
+import {variantsPrompt} from './prompts/variants.js';
+import {authenticationMessage} from './ui/authentication.js';
+import {customersMessage} from './ui/customers.js';
+import {successMessage} from './ui/success.js';
 
-process.on("uncaughtException", (error) => {
+process.on('uncaughtException', error => {
 	console.error(error);
 	process.exit(1);
 });
 
-process.on("unhandledRejection", (error) => {
+process.on('unhandledRejection', error => {
 	console.error(error);
 	process.exit(1);
 });
@@ -42,13 +42,13 @@ meow(
 (async () => {
 	const lemonAccessKey = await lemonAccessKeyPrompt();
 
-	const lemon = await createLemonClient(lemonAccessKey);
+	const lemon = createLemonClient(lemonAccessKey);
 
 	const stores = await lemon.listStores();
 	const store = await storePrompt(stores.data?.data ?? []);
 
 	if (!store) {
-		console.error("No store selected");
+		console.error('No store selected');
 		process.exit(1);
 	}
 
@@ -63,7 +63,7 @@ meow(
 	});
 
 	const variantWithProductMap = new Map<string, Product>();
-	let productsCreated: { product: Product; variantId: string }[] = [];
+	let productsCreated: Array<{product: Product; variantId: string}> = [];
 	let discountsCreated: Discount[] = [];
 	let customersCreated: Customer[] = [];
 
@@ -71,7 +71,7 @@ meow(
 
 	const organization = await resolveOrganization(polar, store.attributes.slug);
 
-	if (steps.includes("products")) {
+	if (steps.includes('products')) {
 		const products = await lemon.listProducts({
 			filter: {
 				storeId: store.id,
@@ -80,7 +80,7 @@ meow(
 
 		const productVariants = (
 			await Promise.all(
-				products.data?.data?.map(async (product) => {
+				products.data?.data?.map(async product => {
 					const storeVariants = await lemon.listVariants({
 						filter: {
 							productId: product.id,
@@ -97,9 +97,9 @@ meow(
 		);
 
 		const createdProducts = await Promise.all(
-			variants.map((variant) => {
+			variants.map(async variant => {
 				const lemonProduct = products.data?.data?.find(
-					(product) => product.id === variant.attributes.product_id.toString(),
+					product => product.id === variant.attributes.product_id.toString(),
 				);
 
 				if (!lemonProduct) {
@@ -118,22 +118,22 @@ meow(
 		productsCreated = createdProducts;
 	}
 
-	if (steps.includes("discounts")) {
+	if (steps.includes('discounts')) {
 		const discounts = await listDiscounts({
 			filter: {
 				storeId: store.id,
 			},
-			include: ["variants"],
+			include: ['variants'],
 		});
 
 		const publishedDiscounts =
 			discounts.data?.data?.filter(
-				(discount) => discount.attributes.status === "published",
+				discount => discount.attributes.status === 'published',
 			) ?? [];
 
 		try {
 			discountsCreated = await Promise.all(
-				publishedDiscounts.map((discount) => {
+				publishedDiscounts.map(async discount => {
 					const commonProps = {
 						code: discount.attributes.code,
 						duration: discount.attributes.duration,
@@ -153,14 +153,14 @@ meow(
 
 					const productsToAssociateWithDiscount =
 						discount.relationships.variants.data
-							?.map((variant) => variantWithProductMap.get(variant.id)?.id)
+							?.map(variant => variantWithProductMap.get(variant.id)?.id)
 							.filter((id): id is string => id !== undefined) ?? [];
 
-					if (discount.attributes.amount_type === "fixed") {
+					if (discount.attributes.amount_type === 'fixed') {
 						return polar.discounts.create({
 							...commonProps,
 							amount: discount.attributes.amount,
-							type: "fixed",
+							type: 'fixed',
 							products:
 								productsToAssociateWithDiscount?.length > 0
 									? productsToAssociateWithDiscount
@@ -171,7 +171,7 @@ meow(
 					return polar.discounts.create({
 						...commonProps,
 						basisPoints: discount.attributes.amount * 100,
-						type: "percentage",
+						type: 'percentage',
 						products:
 							productsToAssociateWithDiscount?.length > 0
 								? productsToAssociateWithDiscount
@@ -179,10 +179,10 @@ meow(
 					});
 				}),
 			);
-		} catch (e) {}
+		} catch {}
 	}
 
-	if (steps.includes("customers")) {
+	if (steps.includes('customers')) {
 		const customers = await customersMessage(
 			importCustomers(polar, store, organization),
 		);
@@ -196,14 +196,14 @@ meow(
 
 	await successMessage(
 		organization,
-		productsCreated.map((p) => p.product),
+		productsCreated.map(p => p.product),
 		discountsCreated,
 		customersCreated,
 		server,
 	);
 
 	open(
-		`https://${server === "sandbox" ? "sandbox." : ""}polar.sh/dashboard/${
+		`https://${server === 'sandbox' ? 'sandbox.' : ''}polar.sh/dashboard/${
 			organization.slug
 		}/products`,
 	);

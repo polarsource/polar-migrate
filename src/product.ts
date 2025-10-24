@@ -1,52 +1,59 @@
-import fs from "node:fs";
-import https from "node:https";
-import os from "node:os";
-import path from "node:path";
+import fs from 'node:fs';
+import https from 'node:https';
+import os from 'node:os';
+import path from 'node:path';
 import {
 	type ListProducts,
 	type ListVariants,
 	listFiles,
-} from "@lemonsqueezy/lemonsqueezy.js";
-import type { Polar } from "@polar-sh/sdk";
-import type { Timeframe } from "@polar-sh/sdk/models/components/benefitlicensekeyexpirationproperties.js";
-import type { BenefitLicenseKeyExpirationProperties } from "@polar-sh/sdk/models/components/benefitlicensekeyexpirationproperties.js";
-import type { FileRead } from "@polar-sh/sdk/models/components/listresourcefileread.js";
-import type { Organization } from "@polar-sh/sdk/models/components/organization.js";
-import type { Product } from "@polar-sh/sdk/models/components/product.js";
-import type { ProductCreate } from "@polar-sh/sdk/models/components/productcreate.js";
-import type { ProductPriceCustomCreate } from "@polar-sh/sdk/models/components/productpricecustomcreate.js";
-import type { ProductPriceFixedCreate } from "@polar-sh/sdk/models/components/productpricefixedcreate.js";
-import type { ProductPriceFreeCreate } from "@polar-sh/sdk/models/components/productpricefreecreate.js";
-import type { SubscriptionRecurringInterval } from "@polar-sh/sdk/models/components/subscriptionrecurringinterval.js";
-import mime from "mime-types";
-import { uploadFailedMessage, uploadMessage } from "./ui/upload.js";
-import { Upload } from "./upload.js";
+} from '@lemonsqueezy/lemonsqueezy.js';
+import type {Polar} from '@polar-sh/sdk';
+import {
+	type Timeframe,
+	type BenefitLicenseKeyExpirationProperties,
+} from '@polar-sh/sdk/models/components/benefitlicensekeyexpirationproperties.js';
+import type {FileRead} from '@polar-sh/sdk/models/components/listresourcefileread.js';
+import type {Organization} from '@polar-sh/sdk/models/components/organization.js';
+import type {Product} from '@polar-sh/sdk/models/components/product.js';
+import type {ProductCreate} from '@polar-sh/sdk/models/components/productcreate.js';
+import type {ProductPriceCustomCreate} from '@polar-sh/sdk/models/components/productpricecustomcreate.js';
+import type {ProductPriceFixedCreate} from '@polar-sh/sdk/models/components/productpricefixedcreate.js';
+import type {ProductPriceFreeCreate} from '@polar-sh/sdk/models/components/productpricefreecreate.js';
+import type {SubscriptionRecurringInterval} from '@polar-sh/sdk/models/components/subscriptionrecurringinterval.js';
+import mime from 'mime-types';
+import {uploadFailedMessage, uploadMessage} from './ui/upload.js';
+import {Upload} from './upload.js';
 
 const resolveInterval = (
-	interval: ListVariants["data"][number]["attributes"]["interval"],
-): SubscriptionRecurringInterval | null => {
+	interval: ListVariants['data'][number]['attributes']['interval'],
+): SubscriptionRecurringInterval | undefined => {
 	switch (interval) {
-		case "month":
-			return "month";
-		case "year":
-			return "year";
-		default:
+		case 'month': {
+			return 'month';
+		}
+
+		case 'year': {
+			return 'year';
+		}
+
+		default: {
 			return null;
+		}
 	}
 };
 
 const resolvePrice = (
-	variant: ListVariants["data"][number],
+	variant: ListVariants['data'][number],
 ):
 	| ProductPriceFixedCreate
 	| ProductPriceFreeCreate
 	| ProductPriceCustomCreate => {
-	const priceCurrency = "usd";
+	const priceCurrency = 'usd';
 	const priceAmount = variant.attributes.price;
 
 	if (priceAmount > 0) {
 		return {
-			amountType: "fixed",
+			amountType: 'fixed',
 			priceAmount,
 			priceCurrency,
 		};
@@ -56,43 +63,47 @@ const resolvePrice = (
 
 	if (payWhatYouWant) {
 		return {
-			amountType: "custom",
+			amountType: 'custom',
 			priceAmount,
 			priceCurrency,
-			minimumAmount:
-				variant.attributes.min_price < 50 ? 50 : variant.attributes.min_price,
+			minimumAmount: Math.max(variant.attributes.min_price, 50),
 			presetAmount: variant.attributes.suggested_price,
 		} as ProductPriceCustomCreate;
 	}
 
 	if (priceAmount > 0) {
 		return {
-			amountType: "fixed",
+			amountType: 'fixed',
 			priceAmount,
 			priceCurrency,
 		} as ProductPriceFixedCreate;
 	}
 
 	return {
-		amountType: "free",
+		amountType: 'free',
 	};
 };
 
 const resolveLicenseKeyExpiration = (
-	variant: ListVariants["data"][number],
+	variant: ListVariants['data'][number],
 ): BenefitLicenseKeyExpirationProperties => {
 	let timeframe: Timeframe;
 
 	switch (variant.attributes.license_length_unit) {
-		case "days":
-			timeframe = "day";
+		case 'days': {
+			timeframe = 'day';
 			break;
-		case "months":
-			timeframe = "month";
+		}
+
+		case 'months': {
+			timeframe = 'month';
 			break;
-		case "years":
-			timeframe = "year";
+		}
+
+		case 'years': {
+			timeframe = 'year';
 			break;
+		}
 	}
 
 	return {
@@ -104,11 +115,11 @@ const resolveLicenseKeyExpiration = (
 export const createProduct = async (
 	api: Polar,
 	organization: Organization,
-	variant: ListVariants["data"][number],
-	lemonProduct: ListProducts["data"][number],
+	variant: ListVariants['data'][number],
+	lemonProduct: ListProducts['data'][number],
 ) => {
 	const price = resolvePrice(variant);
-	const isDefault = variant.attributes.name === "Default";
+	const isDefault = variant.attributes.name === 'Default';
 
 	const productName = isDefault
 		? (lemonProduct?.attributes.name ?? variant.attributes.name)
@@ -133,7 +144,7 @@ export const createProduct = async (
 
 	if (variant.attributes.has_license_keys) {
 		const benefit = await api.benefits.create({
-			type: "license_keys",
+			type: 'license_keys',
 			description: `${productName.slice(0, 28)} License Key`,
 			properties: {
 				expires: variant.attributes.is_license_length_unlimited
@@ -159,7 +170,7 @@ export const createProduct = async (
 
 	try {
 		await handleFiles(api, organization, variant, product);
-	} catch (e) {
+	} catch {
 		await uploadFailedMessage();
 	}
 
@@ -172,7 +183,7 @@ export const createProduct = async (
 const handleFiles = async (
 	api: Polar,
 	organization: Organization,
-	variant: ListVariants["data"][number],
+	variant: ListVariants['data'][number],
 	product: Product,
 ) => {
 	const files = await listFiles({
@@ -182,13 +193,13 @@ const handleFiles = async (
 	});
 
 	// Group files with same variant id and download them
-	const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "polar-"));
+	const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'polar-'));
 
 	const groupedFiles =
 		files.data?.data?.reduce<
-			Record<string, { downloadUrl: string; filePath: string }[]>
+			Record<string, Array<{downloadUrl: string; filePath: string}>>
 		>((acc, file) => {
-			if ("attributes" in file && "variant_id" in file.attributes) {
+			if ('attributes' in file && 'variant_id' in file.attributes) {
 				const filePath = path.join(tempDir, file.attributes.name);
 				const url = new URL(file.attributes.download_url);
 
@@ -207,21 +218,21 @@ const handleFiles = async (
 	await Promise.all(
 		Object.values(groupedFiles)
 			.flat()
-			.map((file) => downloadFile(file.downloadUrl, file.filePath)),
+			.map(async file => downloadFile(file.downloadUrl, file.filePath)),
 	);
 
 	// Create one benefit per variant, upload the files to the benefit, and add the benefit to the product
 
 	for (const [_, files] of Object.entries(groupedFiles)) {
 		const fileUploads = await Promise.all(
-			files.map((file) => uploadFile(api, organization, file.filePath)),
+			files.map(async file => uploadFile(api, organization, file.filePath)),
 		);
 
 		const benefit = await api.benefits.create({
-			type: "downloadables",
+			type: 'downloadables',
 			description: product.name,
 			properties: {
-				files: fileUploads.map((file) => file.id),
+				files: fileUploads.map(file => file.id),
 			},
 			organizationId: organization.id,
 		});
@@ -238,26 +249,26 @@ const handleFiles = async (
 	await Promise.all(
 		Object.values(groupedFiles)
 			.flat()
-			.map((file) => fs.promises.unlink(file.filePath)),
+			.map(async file => fs.promises.unlink(file.filePath)),
 	);
 
 	await fs.promises.rmdir(tempDir);
 };
 
-const downloadFile = (url: string, filePath: string) => {
+const downloadFile = async (url: string, filePath: string) => {
 	return new Promise<void>((resolve, reject) => {
 		const options = {
-			method: "GET",
+			method: 'GET',
 			headers: {
-				"Content-Type": "application/octet-stream",
+				'Content-Type': 'application/octet-stream',
 			},
 		};
 
 		const writer = fs.createWriteStream(filePath);
 
-		const request = https.get(url, options, (response) => {
+		const request = https.get(url, options, response => {
 			if (response.statusCode !== 200) {
-				fs.unlink(filePath, (e) => {
+				fs.unlink(filePath, e => {
 					if (e) {
 						console.error(e);
 					}
@@ -268,26 +279,26 @@ const downloadFile = (url: string, filePath: string) => {
 
 			response.pipe(writer);
 
-			writer.on("finish", () => {
+			writer.on('finish', () => {
 				writer.close();
 				resolve();
 			});
 		});
 
-		request.on("error", (err) => {
+		request.on('error', err => {
 			console.error(err);
 
-			fs.unlink(filePath, (e) => {
+			fs.unlink(filePath, e => {
 				if (e) {
 					console.error(e);
 				}
 			});
 		});
 
-		writer.on("error", (err) => {
+		writer.on('error', err => {
 			console.error(err);
 
-			fs.unlink(filePath, (e) => {
+			fs.unlink(filePath, e => {
 				if (e) {
 					console.error(e);
 				}
@@ -304,9 +315,9 @@ const uploadFile = async (
 	filePath: string,
 ) => {
 	const readStream = fs.createReadStream(filePath);
-	const mimeType = mime.lookup(filePath) || "application/octet-stream";
+	const mimeType = mime.lookup(filePath) || 'application/octet-stream';
 
-	const fileUploadPromise = new Promise<FileRead>((resolve) => {
+	const fileUploadPromise = new Promise<FileRead>(resolve => {
 		const upload = new Upload(api, {
 			organization,
 			file: {

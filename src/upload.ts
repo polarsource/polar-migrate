@@ -1,16 +1,16 @@
-import type { ReadStream } from "node:fs";
-import type { Polar } from "@polar-sh/sdk";
-import type { FileCreate } from "@polar-sh/sdk/models/components/filecreate.js";
-import type { FileUpload } from "@polar-sh/sdk/models/components/fileupload.js";
-import type { FileRead } from "@polar-sh/sdk/models/components/listresourcefileread.js";
-import type { Organization } from "@polar-sh/sdk/models/components/organization.js";
-import type { S3FileCreatePart } from "@polar-sh/sdk/models/components/s3filecreatepart.js";
-import type { S3FileUploadCompletedPart } from "@polar-sh/sdk/models/components/s3fileuploadcompletedpart.js";
-import type { S3FileUploadPart } from "@polar-sh/sdk/models/components/s3fileuploadpart.js";
+import type {ReadStream} from 'node:fs';
+import type {Polar} from '@polar-sh/sdk';
+import type {FileCreate} from '@polar-sh/sdk/models/components/filecreate.js';
+import type {FileUpload} from '@polar-sh/sdk/models/components/fileupload.js';
+import type {FileRead} from '@polar-sh/sdk/models/components/listresourcefileread.js';
+import type {Organization} from '@polar-sh/sdk/models/components/organization.js';
+import type {S3FileCreatePart} from '@polar-sh/sdk/models/components/s3filecreatepart.js';
+import type {S3FileUploadCompletedPart} from '@polar-sh/sdk/models/components/s3fileuploadcompletedpart.js';
+import type {S3FileUploadPart} from '@polar-sh/sdk/models/components/s3fileuploadpart.js';
 
-const CHUNK_SIZE = 10000000; // 10MB
+const CHUNK_SIZE = 10_000_000; // 10MB
 
-interface UploadProperties {
+type UploadProperties = {
 	organization: Organization;
 	file: {
 		name: string;
@@ -20,7 +20,7 @@ interface UploadProperties {
 	};
 	onFileUploadProgress: (file: FileUpload, uploaded: number) => void;
 	onFileUploaded: (response: FileRead) => void;
-}
+};
 
 export class Upload {
 	api: Polar;
@@ -31,6 +31,7 @@ export class Upload {
 		size: number;
 		readStream: ReadStream;
 	};
+
 	onFileUploadProgress: (file: FileUpload, uploaded: number) => void;
 	onFileUploaded: (response: FileRead) => void;
 	private buffer: Buffer;
@@ -57,11 +58,12 @@ export class Upload {
 		for await (const chunk of this.file.readStream) {
 			chunks.push(chunk);
 		}
+
 		this.buffer = Buffer.concat(chunks);
 	}
 
 	async getSha256Base64(buffer: ArrayBuffer) {
-		const sha256 = await crypto.subtle.digest("SHA-256", buffer);
+		const sha256 = await crypto.subtle.digest('SHA-256', buffer);
 		const sha256base64 = btoa(String.fromCharCode(...new Uint8Array(sha256)));
 		return sha256base64;
 	}
@@ -70,24 +72,24 @@ export class Upload {
 		await this.prepare();
 		const sha256base64 = await this.getSha256Base64(this.buffer);
 		const parts = await this.getMultiparts();
-		const mimeType = this.file.type ?? "application/octet-stream";
+		const mimeType = this.file.type ?? 'application/octet-stream';
 
 		const params: FileCreate = {
 			organizationId: this.organization.id,
-			service: "downloadable",
+			service: 'downloadable',
 			name: this.file.name,
 			size: this.file.size,
 			mimeType: mimeType,
 			checksumSha256Base64: sha256base64,
-			upload: { parts: parts },
+			upload: {parts: parts},
 		};
 
 		return this.api.files.create(params);
 	}
 
-	async getMultiparts(): Promise<Array<S3FileCreatePart>> {
+	async getMultiparts(): Promise<S3FileCreatePart[]> {
 		const chunkCount = Math.floor(this.file.size / CHUNK_SIZE) + 1;
-		const parts: Array<S3FileCreatePart> = [];
+		const parts: S3FileCreatePart[] = [];
 
 		for (let i = 1; i <= chunkCount; i++) {
 			const chunk_start = (i - 1) * CHUNK_SIZE;
@@ -95,6 +97,7 @@ export class Upload {
 			if (chunk_end > this.file.size) {
 				chunk_end = this.file.size;
 			}
+
 			const chunk = this.buffer.slice(chunk_start, chunk_end);
 
 			const chunkSha256base64 = await this.getSha256Base64(chunk);
@@ -107,6 +110,7 @@ export class Upload {
 			};
 			parts.push(part);
 		}
+
 		return parts;
 	}
 
@@ -114,7 +118,7 @@ export class Upload {
 		parts,
 		onProgress,
 	}: {
-		parts: Array<S3FileUploadPart>;
+		parts: S3FileUploadPart[];
 		onProgress: (uploaded: number) => void;
 	}): Promise<S3FileUploadCompletedPart[]> {
 		const ret = [];
@@ -129,12 +133,12 @@ export class Upload {
 			const part = parts[i];
 
 			if (!part) {
-				throw new Error("Part is undefined");
+				throw new Error('Part is undefined');
 			}
 
 			const completed = await this.upload({
 				part,
-				onProgress: (chunk_uploaded) => {
+				onProgress: chunk_uploaded => {
 					onProgress(uploaded + chunk_uploaded);
 				},
 			});
@@ -154,26 +158,26 @@ export class Upload {
 		onProgress: (uploaded: number) => void;
 	}): Promise<S3FileUploadCompletedPart> {
 		const data = this.buffer.slice(part.chunkStart, part.chunkEnd);
-		const blob = new Blob([data], { type: "application/octet-stream" });
+		const blob = new Blob([data], {type: 'application/octet-stream'});
 
 		const controller = new AbortController();
-		const signal = controller.signal;
+		const {signal} = controller;
 
 		const response = await fetch(part.url, {
-			method: "PUT",
+			method: 'PUT',
 			headers: part.headers || {},
 			body: blob,
 			signal,
 		});
 
 		if (!response.ok) {
-			throw new Error("Failed to upload part");
+			throw new Error('Failed to upload part');
 		}
 
-		const etag = response.headers.get("ETag");
+		const etag = response.headers.get('ETag');
 
 		if (!etag) {
-			throw new Error("ETag not found in response");
+			throw new Error('ETag not found in response');
 		}
 
 		const completed: S3FileUploadCompletedPart = {

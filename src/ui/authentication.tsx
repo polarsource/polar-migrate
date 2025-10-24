@@ -1,9 +1,9 @@
-import { Spinner } from "@inkjs/ui";
-import { render } from "ink";
-import React from "react";
+import {Spinner} from '@inkjs/ui';
+import {render} from 'ink';
+import React from 'react';
 
 export const authenticationMessage = async () => {
-	const { unmount, clear, waitUntilExit } = render(
+	const {unmount, clear, waitUntilExit} = render(
 		<Spinner label="Opening browser for authentication..." />,
 	);
 
